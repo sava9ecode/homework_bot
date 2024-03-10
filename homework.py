@@ -84,19 +84,19 @@ def get_api_answer(timestamp):
             ENDPOINT, headers=HEADERS, params={'from_date': timestamp}
         )
 
-        match response.status_code:
-            case HTTPStatus.INTERNAL_SERVER_ERROR:
-                raise InternalServerError(
-                    ERROR_MESSAGE.get('InternalServerError')
-                )
-            case HTTPStatus.UNAUTHORIZED:
-                raise TokenError(ERROR_MESSAGE.get('TokenError'))
-            case HTTPStatus.BAD_REQUEST:
-                raise FormDateError(ERROR_MESSAGE.get('FormDateError'))
-            case HTTPStatus.NO_CONTENT:
-                raise NoContentError(ERROR_MESSAGE.get('NoContentError'))
-            case HTTPStatus.NOT_FOUND:
-                raise Error404(ERROR_MESSAGE.get('Error404'))
+        status_code = response.status_code
+        if status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
+            raise InternalServerError(
+                ERROR_MESSAGE.get('InternalServerError')
+            )
+        elif status_code == HTTPStatus.UNAUTHORIZED:
+            raise TokenError(ERROR_MESSAGE.get('TokenError'))
+        elif status_code == HTTPStatus.BAD_REQUEST:
+            raise FormDateError(ERROR_MESSAGE.get('FormDateError'))
+        elif status_code == HTTPStatus.NO_CONTENT:
+            raise NoContentError(ERROR_MESSAGE.get('NoContentError'))
+        elif status_code == HTTPStatus.NOT_FOUND:
+            raise Error404(ERROR_MESSAGE.get('Error404'))
 
         return response.json()
     except RequestException as error:
