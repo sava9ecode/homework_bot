@@ -2,12 +2,14 @@ import logging
 import os
 import time
 from http import HTTPStatus
+from json.decoder import JSONDecodeError
 from logging import StreamHandler
 
 import requests
 import telegram
 from dotenv import load_dotenv
-from requests import RequestException
+from requests.exceptions import RequestException
+from telegram import TelegramError
 
 from exceptions import (
     EnvironmentVariableError,
@@ -71,10 +73,10 @@ def send_message(bot, message):
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
         logger.debug('Сообщение успешно отправлено')
+    except TelegramError as error:
+        logger.error(f'Ошибка Telegram: {error}')
     except Exception as error:
-        logger.error(
-            f'Ошибка при отправке сообщения в Telegram: {error}'
-        )
+        logger.error(f'Ошибка при отправке сообщения в Telegram: {error}')
 
 
 def get_api_answer(timestamp):
@@ -99,14 +101,17 @@ def get_api_answer(timestamp):
             raise Error404(ERROR_MESSAGE.get('Error404'))
 
         return response.json()
-    except RequestException as error:
-        logger.error(f'Ошибка при запросе к основному API: {error}')
+    except JSONDecodeError('Ошибка при обработке JSON'):
+        ...
+    except RequestException('Ошибка при запросе к основному API'):
+        ...
 
 
 def check_response(response):
     """Проверяет ответ API на соответствие документации."""
     if not (
         'homeworks' in response
+        and 'current_date' in response
         and isinstance(response.get('homeworks'), list)
         and isinstance(response, dict)
     ):
@@ -132,7 +137,7 @@ def parse_status(homework):
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        logging.critical(ERROR_MESSAGE.get('EnvironmentVariableError'))
+        logger.critical(ERROR_MESSAGE.get('EnvironmentVariableError'))
         raise EnvironmentVariableError
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
@@ -170,6 +175,8 @@ def main():
                 send_message(bot, message)
 
             logger.error(message)
+        else:
+            timestamp = response.get('current_date')
         finally:
             time.sleep(RETRY_PERIOD)
 
