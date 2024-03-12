@@ -101,17 +101,16 @@ def get_api_answer(timestamp):
             raise Error404(ERROR_MESSAGE.get('Error404'))
 
         return response.json()
-    except JSONDecodeError('Ошибка при обработке JSON'):
-        ...
-    except RequestException('Ошибка при запросе к основному API'):
-        ...
+    except JSONDecodeError('Ошибка при обработке JSON') as error:
+        raise error
+    except RequestException('Ошибка при запросе к основному API') as error:
+        raise error
 
 
 def check_response(response):
     """Проверяет ответ API на соответствие документации."""
     if not (
-        'homeworks' in response
-        and 'current_date' in response
+        ('homeworks' in response or 'current_date' in response)
         and isinstance(response.get('homeworks'), list)
         and isinstance(response, dict)
     ):
